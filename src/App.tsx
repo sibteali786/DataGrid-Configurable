@@ -17,12 +17,7 @@ const columnConfig: ColumnConfig[] = [
 function App() {
   return (
     <div className="App">
-      <ConfigurableGrid
-        apiUrl="https://us-central1-fir-apps-services.cloudfunctions.net/transactions"
-        columnConfig={columnConfig}
-        titleKey="name"
-        subtitleKey="category"
-      />
+      <ConfigurableGrid defaultColumnConfig={columnConfig} />
     </div>
   );
 }

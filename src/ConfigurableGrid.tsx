@@ -10,33 +10,38 @@ import {
   TableRow,
   Paper,
   CircularProgress,
+  TextField,
+  Button,
+  IconButton,
+  Select,
+  MenuItem,
+  InputLabel,
 } from "@mui/material";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
 
 export interface ColumnConfig {
   label: string;
   key: string;
   type: string;
+  [key: string]: any;
 }
 
 export interface GridProps {
-  apiUrl: string;
-  columnConfig: ColumnConfig[];
-  titleKey?: string;
-  subtitleKey?: string;
+  defaultColumnConfig: ColumnConfig[];
 }
 
-const ConfigurableGrid: React.FC<GridProps> = ({
-  apiUrl,
-  columnConfig,
-  titleKey,
-  subtitleKey,
-}) => {
+const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
+  const [apiUrl, setApiUrl] = useState("");
+  const [columnConfig, setColumnConfig] = useState(defaultColumnConfig);
   const [data, setData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 600);
+  const [titleKey, setTitleKey] = useState(defaultColumnConfig[0].key);
+  const [subtitleKey, setSubTitleKey] = useState(defaultColumnConfig[1].key);
   useEffect(() => {
     const handleResize = () => {
       setIsMobileView(window.innerWidth < 600);
@@ -44,18 +49,50 @@ const ConfigurableGrid: React.FC<GridProps> = ({
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
   useEffect(() => {
-    axios
-      .get(apiUrl)
-      .then((response) => {
-        setData(response?.data?.data);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        console.error(error);
-        setIsLoading(false);
-      });
-  }, [apiUrl]);
+    fetchData();
+  }, []);
+
+  const fetchData = () => {
+    setIsLoading(false);
+    if (apiUrl.length > 0) {
+      axios
+        .get(apiUrl)
+        .then((response) => {
+          setData(response?.data?.data);
+          console.log(response?.data?.data);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          console.error(error);
+          setIsLoading(false);
+        });
+    }
+  };
+
+  const handleApiUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setApiUrl(event.target.value);
+  };
+
+  const handleColumnConfigChange = (index: number, key: string, value: any) => {
+    const newColumnConfig = [...columnConfig];
+    newColumnConfig[index][key] = value;
+    setColumnConfig(newColumnConfig);
+  };
+
+  const handleAddColumn = () => {
+    setColumnConfig([
+      ...columnConfig,
+      { label: "New Column", key: "new_column", type: "string" },
+    ]);
+  };
+
+  const handleRemoveColumn = (index: number) => {
+    const newColumnConfig = [...columnConfig];
+    newColumnConfig.splice(index, 1);
+    setColumnConfig(newColumnConfig);
+  };
 
   const getTitle = (row: any) => {
     if (titleKey) {
@@ -69,6 +106,17 @@ const ConfigurableGrid: React.FC<GridProps> = ({
       return row[subtitleKey];
     }
     return row[columnConfig[1].key];
+  };
+
+  const handleTitleChange = (event: any) => {
+    setTitleKey(event.target.value as string);
+  };
+
+  const handleSubtitleChange = (event: any) => {
+    setSubTitleKey(event.target.value as string);
+  };
+  const handleFetchData = () => {
+    fetchData();
   };
 
   if (isLoading) {
@@ -85,47 +133,161 @@ const ConfigurableGrid: React.FC<GridProps> = ({
   }
 
   return (
-    <Grid container className="flex flex-col justify-center !important">
+    <Grid container className="flex flex-col justify-center px-[4rem]">
+      <h1 className="text-2xl sm:text-3xl">Configurable Grid</h1>
+      <Grid container item xs={12} className="my-2">
+        <p className="text-gray-700 mb-2">Enter the Api URL to retrieve data</p>
+        <TextField
+          fullWidth
+          variant="outlined"
+          label="API URL"
+          value={apiUrl}
+          onChange={handleApiUrlChange}
+        />
+        <Button
+          variant="contained"
+          className="bg-slate-700 mt-2"
+          onClick={handleFetchData}
+        >
+          Fetch Data
+        </Button>
+      </Grid>
       {isMobileView ? (
-        <div className="block sm:hidden">
-          <h1 className="my-2 text-xl md:text-3xl ">
-            Data Grid As List Mobile View
-          </h1>
-          <List>
-            {data.map((row: any) => (
-              <ListItem
-                key={row.id}
-                className="border-2 border-black my-2 rounded-md hover:bg-slate-400 hover:cursor-pointer transition-all ease-in-out delay-120 hover:text-white"
-              >
-                <ListItemText
-                  primary={getTitle(row)}
-                  secondary={getSubtitle(row)}
-                />
-              </ListItem>
-            ))}
-          </List>
-        </div>
-      ) : (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                {columnConfig.map((column: ColumnConfig) => (
-                  <TableCell key={column.key}>{column.label}</TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <Grid container item xs={12} mt={2}>
+          <div className="block sm:hidden">
+            <form>
+              <div className="space-x-2">
+                <p>Chose any column to set as tile and subtitle</p>
+                <div className="flex flex-col items-start">
+                  <InputLabel className="my-2">Title</InputLabel>
+                  <Select
+                    value={titleKey}
+                    onChange={(e) => handleTitleChange(e)}
+                  >
+                    {data.length > 0 ? (
+                      Object.keys(data[0]).map((field, index) => (
+                        <MenuItem key={index} value={field}>
+                          {field}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value={titleKey}>{titleKey}</MenuItem>
+                    )}
+                  </Select>
+                  <InputLabel className="my-2">Subtitle</InputLabel>
+                  <Select
+                    value={subtitleKey}
+                    onChange={(e) => handleSubtitleChange(e)}
+                  >
+                    {data.length > 0 ? (
+                      Object.keys(data[0]).map((field, index) => (
+                        <MenuItem key={index} value={field}>
+                          {field}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value={subtitleKey}>{subtitleKey}</MenuItem>
+                    )}
+                  </Select>
+                </div>
+              </div>
+            </form>
+            <List>
               {data.map((row: any) => (
-                <TableRow key={row.id}>
-                  {columnConfig.map((column: ColumnConfig) => (
-                    <TableCell key={column.key}>{row[column.key]}</TableCell>
-                  ))}
-                </TableRow>
+                <ListItem
+                  key={row.id}
+                  className="border-2 border-black my-2 rounded-md hover:bg-slate-400 hover:cursor-pointer transition-all ease-in-out delay-120 hover:text-white"
+                >
+                  <ListItemText
+                    primary={getTitle(row)}
+                    secondary={getSubtitle(row)}
+                  />
+                </ListItem>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </List>
+          </div>
+        </Grid>
+      ) : (
+        <>
+          <Grid container item xs={12} mt={2}>
+            <p className="text-gray-700 mb-2">
+              Select Column Label, key and DataType
+            </p>
+            <TableContainer component={Paper}>
+              <Table>
+                <TableHead>
+                  <TableRow className="overflow-scroll">
+                    {columnConfig.map((column, index) => (
+                      <TableCell key={index} className="min-w-[200px]">
+                        <TextField
+                          className="my-2"
+                          fullWidth
+                          variant="outlined"
+                          label="Label"
+                          value={column.label}
+                          onChange={(event) =>
+                            handleColumnConfigChange(
+                              index,
+                              "label",
+                              event.target.value
+                            )
+                          }
+                        />
+                        <TextField
+                          className="my-2"
+                          fullWidth
+                          variant="outlined"
+                          label="Column Key"
+                          value={column.key}
+                          onChange={(event) =>
+                            handleColumnConfigChange(
+                              index,
+                              "key",
+                              event.target.value
+                            )
+                          }
+                        />
+                        <TextField
+                          className="my-2"
+                          fullWidth
+                          variant="outlined"
+                          label="Column Type"
+                          value={column.type}
+                          onChange={(event) =>
+                            handleColumnConfigChange(
+                              index,
+                              "type",
+                              event.target.value
+                            )
+                          }
+                        />
+                        <IconButton onClick={() => handleRemoveColumn(index)}>
+                          <DeleteIcon />
+                        </IconButton>
+                      </TableCell>
+                    ))}
+                    <TableCell>
+                      <IconButton onClick={handleAddColumn}>
+                        <AddIcon />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {data.map((row: any, rowIndex: number) => (
+                    <TableRow key={rowIndex}>
+                      <TableCell>{getTitle(row)}</TableCell>
+                      <TableCell>{getSubtitle(row)}</TableCell>
+                      {columnConfig.slice(2).map((column, index) => (
+                        <TableCell key={index}>{row[column.key]}</TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Grid>
+        </>
       )}
     </Grid>
   );
