@@ -27,6 +27,7 @@ export interface ColumnConfig {
   label: string;
   key: string;
   type: string;
+  // To allow indexing of the ColumnConfig props
   [key: string]: any;
 }
 
@@ -35,34 +36,40 @@ export interface GridProps {
 }
 
 const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
+  // Different States
   const [apiUrl, setApiUrl] = useState("");
   const [columnConfig, setColumnConfig] = useState(defaultColumnConfig);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 600);
-  const [titleKey, setTitleKey] = useState(defaultColumnConfig[0].key);
-  const [subtitleKey, setSubTitleKey] = useState(defaultColumnConfig[1].key);
+  const [titleKey, setTitleKey] = useState("");
+  const [subtitleKey, setSubTitleKey] = useState("");
+
+  // useEffect to handle window resize
   useEffect(() => {
     const handleResize = () => {
       setIsMobileView(window.innerWidth < 600);
+      // Checking if on mobileView
     };
     window.addEventListener("resize", handleResize);
+    if (isMobileView) {
+      if (columnConfig.length > 1) {
+        setTitleKey(columnConfig[0].key);
+        setSubTitleKey(columnConfig[1].key);
+      }
+    }
     return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  useEffect(() => {
-    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // fetching data from given API URL
   const fetchData = () => {
-    setIsLoading(false);
+    setIsLoading(true);
     if (apiUrl.length > 0) {
       axios
         .get(apiUrl)
         .then((response) => {
           setData(response?.data?.data);
-          console.log(response?.data?.data);
           setIsLoading(false);
         })
         .catch((error) => {
@@ -76,7 +83,11 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
     setApiUrl(event.target.value);
   };
 
-  const handleColumnConfigChange = (index: number, key: string, value: any) => {
+  const handleColumnConfigChange = (
+    index: number,
+    key: string,
+    value: string
+  ) => {
     const newColumnConfig = [...columnConfig];
     newColumnConfig[index][key] = value;
     setColumnConfig(newColumnConfig);
@@ -85,7 +96,7 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
   const handleAddColumn = () => {
     setColumnConfig([
       ...columnConfig,
-      { label: "New Column", key: "new_column", type: "string" },
+      { label: "Label", key: "Key", type: "string" },
     ]);
   };
 
@@ -120,19 +131,6 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
     fetchData();
   };
 
-  if (isLoading) {
-    return (
-      <Grid
-        container
-        style={{ height: "100vh" }}
-        justifyContent="center"
-        alignItems="center"
-      >
-        <CircularProgress />
-      </Grid>
-    );
-  }
-
   return (
     <Grid container className="flex flex-col justify-center px-[4rem]">
       <h1 className="text-2xl sm:text-3xl">Configurable Grid</h1>
@@ -153,7 +151,16 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
           Fetch Data
         </Button>
       </Grid>
-      {isMobileView ? (
+      {isLoading ? (
+        <Grid
+          container
+          style={{ height: "100vh" }}
+          justifyContent="center"
+          alignItems="center"
+        >
+          <CircularProgress />
+        </Grid>
+      ) : isMobileView ? (
         <Grid container item xs={12} mt={2}>
           <div className="block sm:hidden">
             <form>
