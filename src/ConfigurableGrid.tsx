@@ -30,7 +30,6 @@ export interface ColumnConfig {
   // To allow indexing of the ColumnConfig props
   [key: string]: any;
 }
-
 export interface GridProps {
   defaultColumnConfig: ColumnConfig[];
 }
@@ -39,11 +38,15 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
   // Different States
   const [apiUrl, setApiUrl] = useState("");
   const [columnConfig, setColumnConfig] = useState(defaultColumnConfig);
+  const columnConfigMobile = [
+    { label: "Name", key: "name", type: "string" },
+    { label: "Date", key: "date", type: "date" },
+  ];
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 600);
-  const [titleKey, setTitleKey] = useState("");
-  const [subtitleKey, setSubTitleKey] = useState("");
+  const [titleKey, setTitleKey] = useState(columnConfigMobile[0].key);
+  const [subtitleKey, setSubTitleKey] = useState(columnConfigMobile[1].key);
 
   // useEffect to handle window resize
   useEffect(() => {
@@ -52,12 +55,6 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
       // Checking if on mobileView
     };
     window.addEventListener("resize", handleResize);
-    if (isMobileView) {
-      if (columnConfig.length > 1) {
-        setTitleKey(columnConfig[0].key);
-        setSubTitleKey(columnConfig[1].key);
-      }
-    }
     return () => window.removeEventListener("resize", handleResize);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -110,14 +107,14 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
     if (titleKey) {
       return row[titleKey];
     }
-    return row[columnConfig[0].key];
+    return row[columnConfigMobile[0].key];
   };
 
   const getSubtitle = (row: any) => {
     if (subtitleKey) {
       return row[subtitleKey];
     }
-    return row[columnConfig[1].key];
+    return row[columnConfigMobile[1].key];
   };
 
   const handleTitleChange = (event: any) => {
@@ -284,9 +281,7 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
                 <TableBody>
                   {data.map((row: any, rowIndex: number) => (
                     <TableRow key={rowIndex}>
-                      <TableCell>{getTitle(row)}</TableCell>
-                      <TableCell>{getSubtitle(row)}</TableCell>
-                      {columnConfig.slice(2).map((column, index) => (
+                      {columnConfig.map((column, index) => (
                         <TableCell key={index}>{row[column.key]}</TableCell>
                       ))}
                     </TableRow>
