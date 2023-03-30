@@ -66,7 +66,14 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
       axios
         .get(apiUrl)
         .then((response) => {
-          setData(response?.data?.data);
+          console.log(response?.data);
+          setData(
+            response?.data.hasOwnProperty("data")
+              ? response?.data?.data
+              : Array.isArray(response?.data)
+              ? response?.data
+              : [response?.data]
+          );
           setIsLoading(false);
         })
         .catch((error) => {
@@ -224,25 +231,8 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
                   <TableRow className="overflow-scroll">
                     {columnConfig.map((column, index) => (
                       <TableCell key={index} className="min-w-[200px]">
-                        <TextField
-                          className="my-2"
-                          fullWidth
-                          variant="outlined"
-                          label="Label"
-                          value={column.label}
-                          onChange={(event) =>
-                            handleColumnConfigChange(
-                              index,
-                              "label",
-                              event.target.value
-                            )
-                          }
-                        />
-                        <TextField
-                          className="my-2"
-                          fullWidth
-                          variant="outlined"
-                          label="Column Key"
+                        <Select
+                          className="block my-2"
                           value={column.key}
                           onChange={(event) =>
                             handleColumnConfigChange(
@@ -251,7 +241,40 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
                               event.target.value
                             )
                           }
-                        />
+                        >
+                          {data.length > 0 ? (
+                            Object.keys(data[0]).map((field, index) => (
+                              <MenuItem key={index} value={field}>
+                                {field.toUpperCase()}
+                              </MenuItem>
+                            ))
+                          ) : (
+                            <MenuItem value={column.key}>
+                              {column.key.toUpperCase()}
+                            </MenuItem>
+                          )}
+                        </Select>
+                        <Select
+                          className="block"
+                          value={column.key}
+                          onChange={(event) =>
+                            handleColumnConfigChange(
+                              index,
+                              "key",
+                              event.target.value
+                            )
+                          }
+                        >
+                          {data.length > 0 ? (
+                            Object.keys(data[0]).map((field, index) => (
+                              <MenuItem key={index} value={field}>
+                                {field}
+                              </MenuItem>
+                            ))
+                          ) : (
+                            <MenuItem value={column.key}>{column.key}</MenuItem>
+                          )}
+                        </Select>
                         <TextField
                           className="my-2"
                           fullWidth
@@ -282,7 +305,13 @@ const ConfigurableGrid: React.FC<GridProps> = ({ defaultColumnConfig }) => {
                   {data.map((row: any, rowIndex: number) => (
                     <TableRow key={rowIndex}>
                       {columnConfig.map((column, index) => (
-                        <TableCell key={index}>{row[column.key]}</TableCell>
+                        <TableCell key={index}>
+                          {Number.isInteger(row[column.key])
+                            ? row[column.key] < 0
+                              ? `(${row[column.key]})`
+                              : row[column.key]
+                            : row[column.key]}
+                        </TableCell>
                       ))}
                     </TableRow>
                   ))}

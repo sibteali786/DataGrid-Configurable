@@ -8,10 +8,10 @@ import "@fontsource/roboto/700.css";
 
 const columnConfig: ColumnConfig[] = [
   { label: "Name", key: "name", type: "string" },
-  // { label: "Date", key: "date", type: "date" },
-  // { label: "Category", key: "category", type: "string" },
-  // { label: "Amount", key: "amount", type: "number" },
-  // { label: "Created At", key: "created_at", type: "date" },
+  { label: "Date", key: "date", type: "date" },
+  { label: "Category", key: "category", type: "string" },
+  { label: "Amount", key: "amount", type: "number" },
+  { label: "Created At", key: "created_at", type: "date" },
 ];
 
 function App() {
